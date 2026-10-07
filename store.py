@@ -40,7 +40,7 @@ def reset() -> None:
         # user, cents, order status, payment status, refund requested days ago
         (1, 4200, "delivered", "captured", None),
         (2, 15900, "delivered", "refund_requested", 9),
-        (3, 8350, "delivered", "refund_requested", 4),
+        (3, 8350, "delivered", "captured", 4),
         (1, 2999, "delivered", "refunded", 12),
         (2, 6100, "placed", "captured", None),
     ]
@@ -65,7 +65,7 @@ def reset() -> None:
             order_id=order.id,
             amount_cents=cents,
             status=payment_status,
-            provider_ref=f"pay_{order.id:06d}",
+            provider_ref=f"pay_{order.id:06d}{'_bad' if order.id == 3 else ''}",
             refund_requested_at=requested_at,
             refunded_at=(
                 now - timedelta(days=10) if payment_status == "refunded" else None

@@ -37,6 +37,21 @@ class PaymentsGateway:
     def refund(self, provider_ref: str) -> dict:
         if not provider_ref:
             raise PaymentsGatewayError("provider_ref is required")
+
+        # Simulate different refund outcomes
+        if "bad" in provider_ref:
+            return {
+                "reference": provider_ref,
+                "status": "refund_pending",
+                "delay_reason": "provider_hold",
+            }
+        if "ugly" in provider_ref:
+            return {
+                "reference": provider_ref,
+                "status": "refund_pending",
+                "delay_reason": "manual_review",
+            }
+
         return {
             "reference": provider_ref,
             "status": "refund_pending",

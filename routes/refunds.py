@@ -32,11 +32,12 @@ def request_refund():
 
     gateway = PaymentsGateway()
     try:
-        gateway.refund(payment.provider_ref)
+        refund_details = gateway.refund(payment.provider_ref)
     except PaymentsGatewayError as exc:
         return jsonify({"error": str(exc)}), 502
 
     payment.status = "refund_requested"
     payment.refund_requested_at = datetime.now(timezone.utc)
+    payment.refund_delay_reason = refund_details.get("delay_reason")
 
     return jsonify(payment.to_dict()), 202

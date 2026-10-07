@@ -71,6 +71,14 @@ class TestRefunds(AcmeStoreTestCase):
         self.assertEqual(body["status"], "refund_requested")
         self.assertIsNotNone(body["refund_requested_at"])
 
+    def test_request_refund_with_delay_reason(self):
+        # Order 3's payment has a provider_ref that will cause a delay
+        response = self.client.post("/refunds", json={"order_id": 3})
+        self.assertEqual(response.status_code, 202)
+        body = response.get_json()
+        self.assertEqual(body["status"], "refund_requested")
+        self.assertEqual(body["refund_delay_reason"], "provider_hold")
+
     def test_cannot_refund_twice(self):
         self.client.post("/refunds", json={"order_id": 1})
         response = self.client.post("/refunds", json={"order_id": 1})
