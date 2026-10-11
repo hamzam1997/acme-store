@@ -42,6 +42,7 @@ class Payment:
     provider_ref: str = ""
     refund_requested_at: datetime | None = None
     refunded_at: datetime | None = None
+    delay_notification_sent_at: datetime | None = None
     created_at: datetime = field(default_factory=_now)
 
     def to_dict(self) -> dict:
@@ -57,5 +58,10 @@ class Payment:
                 else None
             ),
             "refunded_at": self.refunded_at.isoformat() if self.refunded_at else None,
+            "delay_notification_sent_at": (
+                self.delay_notification_sent_at.isoformat()
+                if self.delay_notification_sent_at
+                else None
+            ),
             "created_at": self.created_at.isoformat(),
         }
