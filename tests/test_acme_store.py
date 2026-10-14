@@ -6,7 +6,7 @@ from app import create_app
 
 class AcmeStoreTestCase(unittest.TestCase):
     def setUp(self):
-        store.reset()
+        store.reset_store()
         self.client = create_app().test_client()
 
 

@@ -20,7 +20,7 @@ def next_id(kind: str) -> int:
     return value
 
 
-def reset() -> None:
+def reset_store() -> None:
     """Restore the seeded fixtures. Called on startup and between tests."""
     users.clear()
     orders.clear()
@@ -82,4 +82,49 @@ def payment_for_order(order_id: int) -> Payment | None:
     return None
 
 
-reset()
+def get_all_users():
+    return list(users.values())
+
+def get_user_by_id(user_id: int) -> User | None:
+    return users.get(user_id)
+
+def get_all_orders():
+    return list(orders.values())
+
+def get_order_by_id(order_id: int) -> Order | None:
+    return orders.get(order_id)
+
+def get_all_payments():
+    return list(payments.values())
+
+def create_user(name: str, email: str) -> User:
+    user = User(id=len(users) + 1, name=name, email=email)
+    users[user.id] = user
+    return user
+
+def create_order(user_id: int, total_cents: int) -> Order:
+    order = Order(
+        id=next_id("order"),
+        user_id=user_id,
+        total_cents=total_cents,
+        status="placed",
+        created_at=datetime.now(timezone.utc),
+    )
+    orders[order.id] = order
+    return order
+
+def create_payment(order_id: int, amount_cents: int, provider_ref: str) -> Payment:
+    payment = Payment(
+        id=next_id("payment"),
+        order_id=order_id,
+        amount_cents=amount_cents,
+        status="captured",
+        provider_ref=provider_ref,
+        created_at=datetime.now(timezone.utc),
+    )
+    payments[payment.id] = payment
+    return payment
+
+
+
+reset_store()
