@@ -1,7 +1,10 @@
 import unittest
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import store
 from app import create_app
+from models import Order, Payment, User
 
 
 class AcmeStoreTestCase(unittest.TestCase):
@@ -79,6 +82,49 @@ class TestRefunds(AcmeStoreTestCase):
     def test_unknown_order(self):
         response = self.client.post("/refunds", json={"order_id": 999})
         self.assertEqual(response.status_code, 404)
+
+class TestDelayedRefunds(AcmeStoreTestCase):
+    @patch("integrations.notifications_service.send_email")
+    def test_notify_delayed_refunds(self, mock_send_email):
+        # 1. Seed a delayed refund
+        store.users.clear()
+        store.orders.clear()
+        store.payments.clear()
+
+        user = User(id=1, name="Test User", email="test@example.com")
+        store.users[user.id] = user
+
+        order = Order(id=1, user_id=1, total_cents=1000)
+        store.orders[order.id] = order
+
+        payment = Payment(
+            id=1,
+            order_id=1,
+            amount_cents=1000,
+            status="refund_requested",
+            refund_requested_at=datetime.now(timezone.utc) - timedelta(days=5),
+        )
+        store.payments[payment.id] = payment
+
+        # 2. Trigger notification check
+        response = self.client.post("/internal/notify-delayed-refunds")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["notified_count"], 1)
+
+        # 3. Assert notification sent and payment updated
+        mock_send_email.assert_called_once_with(
+            user_email=user.email,
+            subject=f"Update on your refund for order #{order.id}",
+            body=f"Hi {user.name}, we are still processing your refund for order #{order.id}. We will notify you again once the refund is complete.",
+        )
+        self.assertIsNotNone(store.payment_for_order(1).delayed_notification_sent_at)
+
+        # 4. Assert idempotency (no second notification)
+        mock_send_email.reset_mock()
+        response = self.client.post("/internal/notify-delayed-refunds")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["notified_count"], 0)
+        mock_send_email.assert_not_called()
 
 
 if __name__ == "__main__":
