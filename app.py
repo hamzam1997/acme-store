@@ -7,8 +7,12 @@ from routes.orders import bp as orders_bp
 from routes.refunds import bp as refunds_bp
 
 
-def create_app() -> Flask:
+def create_app(notifications_client=None, payments_gateway=None) -> Flask:
     app = Flask(__name__)
+    if notifications_client is not None:
+        app.config["NOTIFICATIONS_CLIENT"] = notifications_client
+    if payments_gateway is not None:
+        app.config["PAYMENTS_GATEWAY"] = payments_gateway
     app.register_blueprint(orders_bp)
     app.register_blueprint(checkout_bp)
     app.register_blueprint(refunds_bp)

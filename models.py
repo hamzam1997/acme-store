@@ -13,6 +13,15 @@ class User:
     id: int
     name: str
     email: str
+    phone_number: str | None = None
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "phone_number": self.phone_number,
+        }
 
 
 @dataclass
