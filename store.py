@@ -30,9 +30,9 @@ def reset() -> None:
     now = datetime.now(timezone.utc)
 
     for user in (
-        User(id=1, name="Dana Whitfield", email="dana@example.com"),
-        User(id=2, name="Marco Reyes", email="marco@example.com"),
-        User(id=3, name="Priya Raman", email="priya@example.com"),
+        User(id=1, name="Dana Whitfield", email="dana@example.com", phone_number="+15551234567"),
+        User(id=2, name="Marco Reyes", email="marco@example.com", phone_number="+15552345678"),
+        User(id=3, name="Priya Raman", email="priya@example.com", phone_number="+15553456789"),
     ):
         users[user.id] = user
 
