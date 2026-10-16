@@ -59,3 +59,26 @@ class Payment:
             "refunded_at": self.refunded_at.isoformat() if self.refunded_at else None,
             "created_at": self.created_at.isoformat(),
         }
+
+
+@dataclass
+class StockNotification:
+    id: int
+    product_id: str
+    email: str
+    status: str = "pending"
+    created_at: datetime = field(default_factory=_now)
+    notified_at: datetime | None = None
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "product_id": self.product_id,
+            "email": self.email,
+            "status": self.status,
+            "created_at": self.created_at.isoformat(),
+            "notified_at": (
+                self.notified_at.isoformat() if self.notified_at else None
+            ),
+        }
+
