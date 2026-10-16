@@ -5,13 +5,14 @@ Stands in for a database so the app runs with no external setup.
 
 from datetime import datetime, timedelta, timezone
 
-from models import Order, Payment, User
+from models import Order, Payment, StockNotification, User
 
 users: dict[int, User] = {}
 orders: dict[int, Order] = {}
 payments: dict[int, Payment] = {}
+stock_notifications: dict[int, StockNotification] = {}
 
-_next_id = {"order": 1, "payment": 1}
+_next_id = {"order": 1, "payment": 1, "stock_notification": 1}
 
 
 def next_id(kind: str) -> int:
@@ -25,7 +26,8 @@ def reset() -> None:
     users.clear()
     orders.clear()
     payments.clear()
-    _next_id.update({"order": 1, "payment": 1})
+    stock_notifications.clear()
+    _next_id.update({"order": 1, "payment": 1, "stock_notification": 1})
 
     now = datetime.now(timezone.utc)
 
@@ -80,6 +82,60 @@ def payment_for_order(order_id: int) -> Payment | None:
         if payment.order_id == order_id:
             return payment
     return None
+
+
+def add_stock_notification(product_id: str | int, email: str) -> StockNotification:
+    """Register a customer email for back-in-stock alerts.
+    
+    If an existing pending notification for this product and email exists, returns it.
+    """
+    clean_product_id = str(product_id).strip()
+    clean_email = email.strip()
+    for notif in stock_notifications.values():
+        if (
+            notif.product_id == clean_product_id
+            and notif.email.lower() == clean_email.lower()
+            and notif.status == "pending"
+        ):
+            return notif
+
+    notif = StockNotification(
+        id=next_id("stock_notification"),
+        product_id=clean_product_id,
+        email=clean_email,
+        status="pending",
+    )
+    stock_notifications[notif.id] = notif
+    return notif
+
+
+def get_stock_notifications(
+    product_id: str | int | None = None, status: str | None = None
+) -> list[StockNotification]:
+    """Retrieve stock notifications, optionally filtered by product_id and/or status."""
+    results = list(stock_notifications.values())
+    if product_id is not None:
+        clean_product_id = str(product_id).strip()
+        results = [n for n in results if n.product_id == clean_product_id]
+    if status is not None:
+        results = [n for n in results if n.status == status]
+    return results
+
+
+def get_pending_notifications_for_product(
+    product_id: str | int,
+) -> list[StockNotification]:
+    """Retrieve pending notifications for a specific product."""
+    return get_stock_notifications(product_id=product_id, status="pending")
+
+
+def mark_notification_sent(notification_id: int) -> StockNotification | None:
+    """Mark a stock notification as sent."""
+    notif = stock_notifications.get(notification_id)
+    if notif:
+        notif.status = "sent"
+        notif.notified_at = datetime.now(timezone.utc)
+    return notif
 
 
 reset()
