@@ -5,6 +5,7 @@ from flask import Flask, jsonify
 from routes.checkout import bp as checkout_bp
 from routes.orders import bp as orders_bp
 from routes.refunds import bp as refunds_bp
+from routes.tasks import tasks as tasks_bp
 
 
 def create_app() -> Flask:
@@ -12,6 +13,7 @@ def create_app() -> Flask:
     app.register_blueprint(orders_bp)
     app.register_blueprint(checkout_bp)
     app.register_blueprint(refunds_bp)
+    app.register_blueprint(tasks_bp)
 
     @app.route("/health")
     def health():
