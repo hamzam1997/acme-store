@@ -1,7 +1,10 @@
 import unittest
+from unittest.mock import patch
+from datetime import timedelta, datetime, timezone
 
 import store
 from app import create_app
+from models import User, Order, Payment
 
 
 class AcmeStoreTestCase(unittest.TestCase):
@@ -83,3 +86,43 @@ class TestRefunds(AcmeStoreTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTasks(AcmeStoreTestCase):
+    @patch("integrations.notifications_service.NotificationsService.send_delayed_refund_notification")
+    def test_notify_delayed_refunds(self, mock_send_notification):
+        # 1. Create a user, order, and payment
+        store.users.clear()
+        store.orders.clear()
+        store.payments.clear()
+
+        user = User(id=1, name="Test User", email="test@example.com")
+        store.users[user.id] = user
+
+        order = Order(id=1, user_id=1, total_cents=1000)
+        store.orders[order.id] = order
+
+        payment = Payment(id=1, order_id=1, amount_cents=1000)
+        store.payments[payment.id] = payment
+
+        # 2. Set the payment status to refund_requested and the refund_requested_at to a date in the past
+        payment.status = "refund_requested"
+        payment.refund_requested_at = datetime.now(timezone.utc) - timedelta(days=5)
+
+        # 3. Call the /tasks/notify-delayed-refunds endpoint
+        response = self.client.post("/tasks/notify-delayed-refunds")
+        self.assertEqual(response.status_code, 200)
+
+        # 4. Assert that the send_delayed_refund_notification method was called with the correct arguments
+        mock_send_notification.assert_called_once_with(
+            user_email=user.email, order_id=order.id
+        )
+
+        # 5. Assert that the delayed_notification_sent_at field on the payment was updated
+        self.assertIsNotNone(payment.delayed_notification_sent_at)
+
+        # 6. Assert that calling the endpoint again does not trigger another notification
+        mock_send_notification.reset_mock()
+        response = self.client.post("/tasks/notify-delayed-refunds")
+        self.assertEqual(response.status_code, 200)
+        mock_send_notification.assert_not_called()
