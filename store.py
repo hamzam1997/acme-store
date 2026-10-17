@@ -81,5 +81,10 @@ def payment_for_order(order_id: int) -> Payment | None:
             return payment
     return None
 
+def get_order_by_idempotency_key(key: str) -> Order | None:
+    for order in orders.values():
+        if order.idempotency_key == key:
+            return order
+    return None
 
 reset()

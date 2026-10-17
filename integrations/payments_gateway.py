@@ -24,13 +24,14 @@ class PaymentsGateway:
     def configured(self) -> bool:
         return bool(self.api_key)
 
-    def charge(self, amount_cents: int, description: str = "") -> dict:
+    def charge(self, amount_cents: int, description: str = "", idempotency_key: str | None = None) -> dict:
         if amount_cents <= 0:
             raise PaymentsGatewayError("amount must be positive")
         return {
             "reference": f"pay_{uuid.uuid4().hex[:12]}",
             "amount_cents": amount_cents,
             "description": description,
+            "idempotency_key": idempotency_key,
             "status": "captured",
         }
 

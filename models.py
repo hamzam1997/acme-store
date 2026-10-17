@@ -21,6 +21,7 @@ class Order:
     user_id: int
     total_cents: int
     status: str = "placed"
+    idempotency_key: str | None = None
     created_at: datetime = field(default_factory=_now)
 
     def to_dict(self) -> dict:
@@ -29,6 +30,7 @@ class Order:
             "user_id": self.user_id,
             "total_cents": self.total_cents,
             "status": self.status,
+            "idempotency_key": self.idempotency_key,
             "created_at": self.created_at.isoformat(),
         }
 
