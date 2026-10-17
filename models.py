@@ -59,3 +59,42 @@ class Payment:
             "refunded_at": self.refunded_at.isoformat() if self.refunded_at else None,
             "created_at": self.created_at.isoformat(),
         }
+
+
+@dataclass
+class Product:
+    id: int
+    name: str
+    price_cents: int
+    stock: int = 0
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "price_cents": self.price_cents,
+            "stock": self.stock,
+        }
+
+
+@dataclass
+class StockAlert:
+    id: int
+    product_id: int
+    email: str
+    user_id: int | None = None
+    status: str = "pending"
+    created_at: datetime = field(default_factory=_now)
+    sent_at: datetime | None = None
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "product_id": self.product_id,
+            "user_id": self.user_id,
+            "email": self.email,
+            "status": self.status,
+            "created_at": self.created_at.isoformat(),
+            "sent_at": self.sent_at.isoformat() if self.sent_at else None,
+        }
+
