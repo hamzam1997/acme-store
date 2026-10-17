@@ -30,6 +30,17 @@ class TestOrders(AcmeStoreTestCase):
         self.assertEqual(body["id"], 1)
         self.assertIsNotNone(body["payment"])
         self.assertEqual(body["payment"]["order_id"], 1)
+        self.assertEqual(body["refund_status"], "captured")
+        self.assertIsNone(body["refund_requested_at"])
+
+    def test_get_order_includes_refund_status(self):
+        # Order 2 is seeded with refund_requested
+        response = self.client.get("/orders/2")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertEqual(body["id"], 2)
+        self.assertEqual(body["refund_status"], "refund_requested")
+        self.assertIsNotNone(body["refund_requested_at"])
 
     def test_unknown_order(self):
         self.assertEqual(self.client.get("/orders/999").status_code, 404)
