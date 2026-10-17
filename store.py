@@ -82,4 +82,11 @@ def payment_for_order(order_id: int) -> Payment | None:
     return None
 
 
+def get_user_by_email(email: str) -> User | None:
+    for user in users.values():
+        if user.email == email:
+            return user
+    return None
+
+
 reset()

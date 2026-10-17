@@ -23,6 +23,36 @@ class TestOrders(AcmeStoreTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.get_json()), 5)
 
+    def test_list_orders_by_email(self):
+        # Marco Reyes has user_id=2
+        # Orders in store.py for user_id 2:
+        # (2, 15900, "delivered", "refund_requested", 9)
+        # (2, 6100, "placed", "captured", None)
+        # Let's add a newer order to verify sorting
+        from datetime import datetime, timedelta, timezone
+        from models import Order
+        newer_order = Order(
+            id=store.next_id("order"),
+            user_id=2,
+            total_cents=1000,
+            status="placed",
+            created_at=datetime.now(timezone.utc)
+        )
+        store.orders[newer_order.id] = newer_order
+        
+        response = self.client.get("/orders?email=marco@example.com")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertEqual(len(body), 3)
+        
+        # Verify it's sorted by created_at descending (newest first)
+        self.assertEqual(body[0]["id"], newer_order.id)
+        
+    def test_list_orders_unknown_email(self):
+        response = self.client.get("/orders?email=nobody@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [])
+
     def test_get_order_includes_payment(self):
         response = self.client.get("/orders/1")
         self.assertEqual(response.status_code, 200)
