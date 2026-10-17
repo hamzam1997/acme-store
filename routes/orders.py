@@ -19,4 +19,12 @@ def get_order(order_id: int):
     payload = order.to_dict()
     payment = store.payment_for_order(order_id)
     payload["payment"] = payment.to_dict() if payment else None
+    
+    if payment:
+        payload["refund_status"] = payment.status
+        payload["refund_requested_at"] = payment.refund_requested_at.isoformat() if payment.refund_requested_at else None
+    else:
+        payload["refund_status"] = None
+        payload["refund_requested_at"] = None
+        
     return jsonify(payload)
