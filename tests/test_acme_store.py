@@ -23,6 +23,25 @@ class TestOrders(AcmeStoreTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.get_json()), 5)
 
+    def test_export_orders_csv(self):
+        import csv
+        import io
+        response = self.client.get("/orders/export.csv")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "text/csv")
+        
+        csv_data = response.data.decode("utf-8")
+        reader = csv.reader(io.StringIO(csv_data))
+        rows = list(reader)
+        self.assertEqual(rows[0], ["ID", "Customer Email", "Amount", "Status", "Creation Date"])
+        self.assertEqual(len(rows), 6)
+        
+        order_1_row = next((row for row in rows[1:] if row[0] == "1"), None)
+        self.assertIsNotNone(order_1_row)
+        self.assertEqual(order_1_row[1], "dana@example.com")
+        self.assertEqual(order_1_row[2], "4200")
+        self.assertEqual(order_1_row[3], "delivered")
+
     def test_get_order_includes_payment(self):
         response = self.client.get("/orders/1")
         self.assertEqual(response.status_code, 200)
