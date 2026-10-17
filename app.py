@@ -2,16 +2,23 @@ import os
 
 from flask import Flask, jsonify
 
+from integrations.notifications_client import NotificationsClient
 from routes.checkout import bp as checkout_bp
 from routes.orders import bp as orders_bp
 from routes.refunds import bp as refunds_bp
+from routes.stock_alerts import bp as stock_alerts_bp
 
 
-def create_app() -> Flask:
+def create_app(notifications_client: NotificationsClient | None = None) -> Flask:
     app = Flask(__name__)
+    if notifications_client is None:
+        notifications_client = NotificationsClient()
+    app.config["NOTIFICATIONS_CLIENT"] = notifications_client
+
     app.register_blueprint(orders_bp)
     app.register_blueprint(checkout_bp)
     app.register_blueprint(refunds_bp)
+    app.register_blueprint(stock_alerts_bp)
 
     @app.route("/health")
     def health():

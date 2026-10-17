@@ -5,13 +5,15 @@ Stands in for a database so the app runs with no external setup.
 
 from datetime import datetime, timedelta, timezone
 
-from models import Order, Payment, User
+from models import Order, Payment, Product, StockAlert, User
 
 users: dict[int, User] = {}
 orders: dict[int, Order] = {}
 payments: dict[int, Payment] = {}
+products: dict[int, Product] = {}
+stock_alerts: dict[int, StockAlert] = {}
 
-_next_id = {"order": 1, "payment": 1}
+_next_id = {"order": 1, "payment": 1, "product": 1, "stock_alert": 1}
 
 
 def next_id(kind: str) -> int:
@@ -25,7 +27,9 @@ def reset() -> None:
     users.clear()
     orders.clear()
     payments.clear()
-    _next_id.update({"order": 1, "payment": 1})
+    products.clear()
+    stock_alerts.clear()
+    _next_id.update({"order": 1, "payment": 1, "product": 1, "stock_alert": 1})
 
     now = datetime.now(timezone.utc)
 
@@ -35,6 +39,16 @@ def reset() -> None:
         User(id=3, name="Priya Raman", email="priya@example.com"),
     ):
         users[user.id] = user
+
+    for prod in (
+        Product(id=1, name="Acme Anvil", price_cents=4999, stock=10),
+        Product(id=2, name="Acme Giant Rubber Band", price_cents=1299, stock=0),
+        Product(id=3, name="Acme Dehydrated Boulders", price_cents=2499, stock=0),
+        Product(id=4, name="Acme Jet-Powered Roller Skates", price_cents=8999, stock=5),
+    ):
+        products[prod.id] = prod
+        if prod.id >= _next_id["product"]:
+            _next_id["product"] = prod.id + 1
 
     seeds = [
         # user, cents, order status, payment status, refund requested days ago
@@ -79,6 +93,26 @@ def payment_for_order(order_id: int) -> Payment | None:
     for payment in payments.values():
         if payment.order_id == order_id:
             return payment
+    return None
+
+
+def pending_alerts_for_product(product_id: int) -> list[StockAlert]:
+    return [
+        alert
+        for alert in stock_alerts.values()
+        if alert.product_id == product_id and alert.status == "pending"
+    ]
+
+
+def find_pending_alert(product_id: int, email: str) -> StockAlert | None:
+    normalized_email = email.strip().lower()
+    for alert in stock_alerts.values():
+        if (
+            alert.product_id == product_id
+            and alert.email.strip().lower() == normalized_email
+            and alert.status == "pending"
+        ):
+            return alert
     return None
 
 
