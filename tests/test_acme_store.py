@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import store
 from app import create_app
@@ -79,6 +80,26 @@ class TestRefunds(AcmeStoreTestCase):
     def test_unknown_order(self):
         response = self.client.post("/refunds", json={"order_id": 999})
         self.assertEqual(response.status_code, 404)
+
+
+class TestDelayedRefunds(AcmeStoreTestCase):
+    @patch("integrations.notifications.NotificationsClient.send_email")
+    def test_notify_delayed_refunds(self, mock_send_email):
+        # In store.py, there are two payments with refund_requested_at > 3 days ago:
+        # order 2: 9 days ago
+        # order 3: 4 days ago
+        # order 4: refunded 12 days ago (status is refunded, not refund_requested)
+        response = self.client.post("/refunds/notify-delayed")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertEqual(body["notified_count"], 2)
+        
+        self.assertEqual(mock_send_email.call_count, 2)
+        
+        # Check that the correct emails were sent
+        emails_sent = [call.kwargs["to_email"] for call in mock_send_email.call_args_list]
+        self.assertIn("marco@example.com", emails_sent)
+        self.assertIn("priya@example.com", emails_sent)
 
 
 if __name__ == "__main__":
