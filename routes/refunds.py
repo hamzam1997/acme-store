@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
 
 import store
 from integrations.payments_gateway import PaymentsGateway, PaymentsGatewayError
+from integrations.notifications import NotificationsClient, NotificationsError
 
 bp = Blueprint("refunds", __name__)
 
@@ -40,3 +41,36 @@ def request_refund():
     payment.refund_requested_at = datetime.now(timezone.utc)
 
     return jsonify(payment.to_dict()), 202
+
+
+def check_and_notify_delayed_refunds(notifications: NotificationsClient) -> int:
+    threshold_days = 3
+    threshold = datetime.now(timezone.utc) - timedelta(days=threshold_days)
+    notified_count = 0
+
+    for payment in store.payments.values():
+        if payment.status == "refund_requested" and payment.refund_requested_at and payment.refund_requested_at < threshold:
+            order = store.orders.get(payment.order_id)
+            if not order:
+                continue
+            user = store.users.get(order.user_id)
+            if not user:
+                continue
+
+            try:
+                notifications.send_email(
+                    to_email=user.email,
+                    subject="Update on your refund",
+                    body=f"Hi {user.name}, your refund for order {order.id} is still in progress."
+                )
+                notified_count += 1
+            except NotificationsError:
+                pass
+    return notified_count
+
+
+@bp.route("/refunds/notify-delayed", methods=["POST"])
+def notify_delayed_refunds():
+    notifications = NotificationsClient()
+    notified_count = check_and_notify_delayed_refunds(notifications)
+    return jsonify({"notified_count": notified_count}), 200
